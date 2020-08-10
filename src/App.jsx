@@ -17,12 +17,21 @@ class App extends Component {
   state = {
     channels: {
       public: [
-        { name: 'Public One', id: 'public1' },
-        { name: 'Public Two', id: 'public2' },
-        { name: 'Public Three', id: 'public3' },
+        { name: 'Public 1', id: 'public1', active: true },
+        { name: 'Public 2', id: 'public2', active: true },
+        { name: 'Public 3', id: 'public3', active: false },
+        { name: 'Public 4', id: 'public4', active: false },
+        { name: 'Public 5', id: 'public5', active: false },
+        { name: 'Public 6', id: 'public6', active: false },
+        { name: 'Public 7', id: 'public7', active: false },
+        { name: 'Public 8', id: 'public8', active: false },
+        { name: 'Public 9', id: 'public9', active: false },
+        { name: 'Public 10', id: 'public10', active: false },
+        { name: 'Public 11', id: 'public11', active: false },
+        { name: 'Public 12', id: 'public12', active: false },
       ],
       private: [
-        { name: 'Private One', id: 'private1' },
+        { name: 'Private One', id: 'private1', active: false },
       ]
     },
     flags: {
@@ -30,11 +39,35 @@ class App extends Component {
     }
   }
 
-  handlerOnClickNav = () => {
-    const value = this.state.flags.navActive;
-    this.setState({
-      flags: { navActive: !value }
-    });
+  eventHandlers = {
+    Navigator: {
+      onClick: () => {
+        const value = this.state.flags.navActive;
+        this.setState({
+          flags: { navActive: !value }
+        });
+      }
+    },
+    Channel: {
+      onClick: (channel) => {
+        const activeChannels = this.state.channels.public.filter(ch => ch.active).length;
+        const publicPool = [...this.state.channels.public];
+        const privatePool = [...this.state.channels.private];
+        const target = publicPool.find(ch => ch.id === channel.id);
+        
+        if (!target.active && activeChannels >= 3) {
+          return;
+        }
+
+        target.active = !target.active;
+        this.setState({
+          channels: {
+            public: publicPool,
+            private: privatePool
+          }
+        });
+      }
+    }
   }
 
   render() { 
@@ -47,7 +80,8 @@ class App extends Component {
           <Navigator
             channels={this.state.channels}
             flags={this.state.flags}
-            onClickNav={this.handlerOnClickNav}
+            onClickNav={() => this.eventHandlers.Navigator.onClick()}
+            onClickChannel={(channel) => this.eventHandlers.Channel.onClick(channel)}
           />
         </Container>
     );
