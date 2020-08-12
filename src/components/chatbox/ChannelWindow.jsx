@@ -1,13 +1,14 @@
 import React, { Component, useRef, useEffect } from 'react';
-import styled,{css} from 'styled-components';
+import styled, {css} from 'styled-components';
+import Message from './Message.jsx';
+import xIcon from '../../icon/x-white.svg';
 
 const Contents = styled.div`
     display: flex;
     flex-direction: column;
-    min-width: 25%;
+    justify-content: center;
     height: 96%;
     flex-grow: 1;
-    flex-basis: 0;
     transition: 0.4s ease-in-out;
     background-color: white;
     margin: 1%;
@@ -15,6 +16,7 @@ const Contents = styled.div`
 `
 
 const Header = styled.div`
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -22,32 +24,36 @@ const Header = styled.div`
     font-size: 1vw;
     font-weight: bold;
     background-color: #00688B;
+    overflow: hidden;
+`
+
+const CloseButton = styled.img`
+    position: absolute;
+    right: 1.5vw;
+    top: 1.5vw;
+    height: 2vw;
+    width: 2vw;
+    border-radius: 0.5vw;
+    transition: 0.2s ease-in-out;
+
+    &:hover {
+        cursor: pointer;
+        right: 1.75vw;
+        top: 1.75vw;
+        height: 1.5vw;
+        width: 1.5vw;
+    }
 `
 
 const Display = styled.div`
     display: flex;
     height: 5vw;
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    padding-top: 1.5vw;
     overflow: auto;
     flex: 1;
 `
-
-const Message = styled.div`
-    max-width: 40%;
-    margin: 0.5vw;
-    padding: 1vw;
-    color: black;
-    border-radius: 0 2vw 2vw 2vw;
-    background-color: #38C438;
-    overflow-wrap: break-word;
-`
-
-const AlwaysScrollToBottom = () => {
-    const elementRef = useRef();
-    useEffect(() => elementRef.current.scrollIntoView());
-    return <div ref={elementRef} />;
-};
 
 const Input = styled.div`
     display: flex;
@@ -75,6 +81,8 @@ const SendButton = styled.div`
     background-color: #195019;
     color: white;
     border-radius: 0vw 2.5vw 2.5vw 0vw;
+    overflow: hidden;
+    font-size: 0.7vw;
 
     &:hover {
         cursor: pointer;
@@ -82,32 +90,41 @@ const SendButton = styled.div`
 `
 
 class ChannelWindow extends Component {
-    state = {  }
+    state = {}
 
     constructor(props) {
         super(props);
-        this.chatWindowBottom = React.createRef();
+        this.bottomRef = React.createRef();
     }
 
     componentDidMount() {
-        this.props.onMount(this.chatWindowBottom);
+        this.bottomRef.current.scrollTop = this.bottomRef.current.scrollHeight;
     }
 
-    render() { 
+    render() {
         return ( 
-            <Contents>
-                <Header> {this.props.channel.name} </Header>
-                <Display ref={this.chatWindowBottom}>
-                    <Message>Aaaaaaaaaaaaaaa?</Message>
-                    <Message>Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</Message>
-                    <Message>No elo kurwa</Message>
-                    <Message>Siemaneczko</Message>
-                    <Message>Aa</Message>
-                    <Message>a</Message>
+            <Contents activeChannels={this.props.activeChannels}>
+                <Header>
+                    {this.props.channel.name}
+                    <CloseButton src={xIcon} onClick={() => this.props.onClickChannel(this.props.channel)} />
+                </Header>
+                <Display ref={this.bottomRef}>
+                    <Message
+                        author='Test-user'
+                        contents='Aaaaaaaaaaaaaaa?'
+                    />
+                    <Message
+                        author='Another-test-user'
+                        contents='Bbb.'
+                    />
+                    <Message
+                        author='Test-user'
+                        contents='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+                    />
                 </Display>
                 <Input>
                     <TextField />
-                    <SendButton>Send</SendButton>
+                    <SendButton className='no-select'>Send</SendButton>
                 </Input>
             </Contents>
         );

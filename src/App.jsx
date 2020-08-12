@@ -76,6 +76,7 @@ class App extends Component {
           <Chatbox 
             channels={this.state.channels}
             flags={this.state.flags}
+            onClickChannel={(channel) => this.eventHandlers.Channel.onClick(channel)}
           />
           <Navigator
             channels={this.state.channels}

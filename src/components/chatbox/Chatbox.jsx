@@ -1,12 +1,11 @@
 import React, { Component } from 'react';
-import styled,{css} from 'styled-components';
+import styled, { css } from 'styled-components';
 import ChannelWindow from './ChannelWindow';
 
 const Contents = styled.div`
     display: flex;
     position: relative;
     justify-content: center;
-    flex-wrap: wrap;
     width: 98vw;
     padding: 1%;
     transition: 0.4s ease-in-out;
@@ -34,21 +33,22 @@ class Chatbox extends Component {
         this.references = [];
     }
 
-    /*onChannelWindowMount = (ref) => {
-        this.references.push(ref);
-        this.references.forEach(r => r.current.scrollTop = r.current.scrollHeight);
-    }*/
-
     generateChatWindows() {
         let windows = this.props.channels.public.filter(ch => ch.active);
-        
         if (windows.length > 0) {
             return windows.map(ch =>  {
-                return <ChannelWindow onMount={(ref) => this.onChannelWindowMount(ref)} key={ch.id} channel={ch} />
+                return (
+                    <ChannelWindow
+                        key={ch.id+windows.length}
+                        channel={ch}
+                        activeChannels={windows.length}
+                        onClickChannel={(channel => this.props.onClickChannel(channel))}
+                    />
+                );
             });
 
         } else {
-            return <Placeholder>No active channels - use the side menu to enter one.</Placeholder>;
+            return <Placeholder className='no-select'>No active channels - use the side menu to enter one.</Placeholder>;
         }
     }
 

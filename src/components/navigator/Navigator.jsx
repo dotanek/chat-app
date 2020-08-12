@@ -92,7 +92,7 @@ class Navigator extends Component {
     render() { 
         return (
             <React.Fragment>
-                <Contents navActive={this.props.flags.navActive}>
+                <Contents className='no-select' navActive={this.props.flags.navActive}>
                     {this.generatePublicChannels()}
                     {this.generatePrivateChannels()}
                 </Contents>
