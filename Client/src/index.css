@@ -13,22 +13,11 @@ code {
 }
 
 :root {
-  --background-color: #001a30;
-  --background-color2: #002c52;
+  --background-color: #06192c;
   --text-color: #ffffff;
 }
 
 body {
   background-color: var(--background-color);
   color: var(--text-color);
-  overflow: hidden;
-}
-
-.no-select {
-  -webkit-touch-callout: none; /* iOS Safari */
-    -webkit-user-select: none; /* Safari */
-     -khtml-user-select: none; /* Konqueror HTML */
-       -moz-user-select: none; /* Old versions of Firefox */
-        -ms-user-select: none; /* Internet Explorer/Edge */
-            user-select: none; 
 }
