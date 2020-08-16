@@ -1,20 +1,16 @@
 import React, { Component } from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import ChannelWindow from './ChannelWindow';
 
 const Contents = styled.div`
     display: flex;
     position: relative;
     justify-content: center;
-    width: 98vw;
-    padding: 1%;
+    padding: 0.9vw 1%;
+    width: 85.2vw;
     transition: 0.4s ease-in-out;
     overflow: auto;
     box-shadow: inset 5px 0px 40px rgba(0,0,0,0.5);
-    ${props => props.navActive && css`
-        padding: 0.9vw 1%;
-        width: 85.2vw;
-    `}
 `
 const Placeholder = styled.div`
     width: 100%;
@@ -27,12 +23,7 @@ const Placeholder = styled.div`
 `
 class Chatbox extends Component {
     state = {}
-
-    constructor(props) {
-        super(props);
-        this.references = [];
-    }
-
+    
     generateChatWindows() {
         let windows = this.props.channels.public.filter(ch => ch.active);
         if (windows.length > 0) {
@@ -53,6 +44,7 @@ class Chatbox extends Component {
     }
 
     render() {
+        console.log('Executed!');
         return (
             <Contents navActive={this.props.flags.navActive}>
                 {this.generateChatWindows()}

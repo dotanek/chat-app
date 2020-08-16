@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import io from 'socket.io-client';
+//import io from 'socket.io-client';
 import styled from 'styled-components';
 import Message from './Message.jsx';
 import xIcon from '../../icon/x-white.svg';
@@ -99,16 +99,10 @@ class ChannelWindow extends Component {
     }
 
     componentDidMount() {
-        this.socket = io();
-        this.socket.on('message', message => {
-            console.log(message);
-        });
-        this.socket.emit('user-message','Siema');
         this.bottomRef.current.scrollTop = this.bottomRef.current.scrollHeight;
     }
 
     componentWillUnmount() {
-        this.socket.removeEventListener();
     }
 
     render() {
