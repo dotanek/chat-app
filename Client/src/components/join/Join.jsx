@@ -12,7 +12,7 @@ const Container = styled.div`
 `
 
 const Window = styled.div`
-    width: 50vw;
+    width: 15vw;
     height: 10vw;
     display: flex;
     flex-direction: column;
@@ -21,55 +21,47 @@ const Window = styled.div`
 
 const Title = styled.div`
     display: flex;
-    height: 70%;
+    height: 45%;
     justify-content: center;
+    align-items: center;
     font-size: 3vw;
     font-weight: bold;
 `
 const Line = styled.div`
-    height: 3%;
-    width: 50%;
-    margin: auto;
+    height: 4%;
+    width: 100%;
     background-color: #ffffff;
 `
 
 const Form = styled.form`
+    height: 51%;
     display: flex;
-    flex-grow: 1;
-    padding-top: 3%;
-    justify-content: center;
-`
-
-const Label = styled.label`
-    display: flex;
-    width: 10%;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.8vw;
+    flex-direction: column;
+    width: 100%;
 `
 const Input = styled.input`
     display: flex;
-    width: 15%;
-    padding: 1%;
+    height: 45%;
+    margin-top: 5%;
+    border: 0;
+    padding: 0;
+    text-align: center; 
+}
 `
 
 const Submit = styled.button`
-    display: flex;
-    width: 8%;
-    justify-content: center;
-    align-items: center;
-    margin-left: 2%;
+    height: 45%;
+    margin-top: 5%;
     font-size: 0.8vw;
     font-weight: bold;
-    background-color: green;
+    background-color: #19640a;
     color: white;
     border: 0;
-    transition: 0.2s ease;
-    backface-visibility: hidden; /* Apparently helps with the blur */
+    transition: 0.2s ease-in-out;
 
     &:hover {
         cursor: pointer;
-        transform: scale(1.1);
+        background-color: #308d1e;
     }
 `
 const Error = styled.div`
@@ -112,7 +104,6 @@ class Join extends Component {
                     <Title>chat-app</Title>
                     <Line />
                     <Form action='/chat' method='get' id='join-form' onSubmit={this.onSubmit}>
-                        <Label>Username</Label>
                         <Input type='text' name='username' value={this.state.username} onChange={this.onChange}></Input>
                         <Submit type='submit' form='join-form'>Join</Submit>
                     </Form>
