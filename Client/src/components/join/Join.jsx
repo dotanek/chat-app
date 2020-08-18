@@ -46,7 +46,6 @@ const Input = styled.input`
     border: 0;
     padding: 0;
     text-align: center; 
-}
 `
 
 const Submit = styled.button`
@@ -104,7 +103,7 @@ class Join extends Component {
                     <Title>chat-app</Title>
                     <Line />
                     <Form action='/chat' method='get' id='join-form' onSubmit={this.onSubmit}>
-                        <Input type='text' name='username' value={this.state.username} onChange={this.onChange}></Input>
+                        <Input type='text' name='username' value={this.state.username} onChange={this.onChange} placeholder='Username'/>
                         <Submit type='submit' form='join-form'>Join</Submit>
                     </Form>
                 </Window>

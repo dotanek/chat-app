@@ -10,15 +10,12 @@ const Container = styled.div`
     font-size: 0.9vw;
     border-bottom: 1px solid rgba(255,255,255,0.5);
     transition: 0.2s ease-in-out;
-
-    ${props => props.active && css`
-        background-color: #CD9806;
-    `}
+    background-color: ${props => (props.active ? '#cd9806' : "#308d1e")};
 
     &:hover {
         cursor: pointer;
         color: #0d2f07;
-        background-color: rgba(255,255,255,0.3);
+        background-color: ${props => (props.active ? '#eebc32' : "#54B740")};
     }
 `
 

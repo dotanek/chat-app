@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Redirect } from 'react-router-dom';
 import io from 'socket.io-client';
 import queryString from 'query-string';
+import axios from 'axios';
 
 import Channel from './Channel';
 import Message from './Message';
@@ -46,9 +47,26 @@ const Display = styled.div`
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
-    width: 80%;
-    height: 75%;
+    width: calc(80% - 2vw);
+    height: calc(75% - 2vw);
+    padding: 1vw;
     color: #000000;
+
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #308d1e rgba(0,0,0,0);
+
+    &::-webkit-scrollbar {
+        width: 3%;
+    }
+
+    &::-webkit-scrollbar-track {
+        background-color: rgba(0,0,0,0);
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: #308d1e;
+    }
 `
 
 const Placeholder = styled.div`
@@ -151,8 +169,18 @@ class Chat extends Component {
         channels.forEach(ch => ch.active = false);
         const target = channels.find(ch => ch.id === channel.id);
         target.active = true;
-        this.socket.emit('get-channel-contents', channel);
-        this.setState({channels});
+
+        axios.get(`http://localhost:9000/get-messages?channelID=${target.id}`)
+            .then(res => {
+                if (res.data.error) {
+                    return this.setState({error: res.data.error});
+                }
+                const messages = res.data.messages;
+                this.setState({messages});
+            })
+            .catch(err => {
+                console.log(err);
+            });
     }
 
     renderChannels() {
@@ -184,17 +212,11 @@ class Chat extends Component {
     componentDidMount() {
         if (this.authentication()) return; // Prevent connecting on redirect.
         //const username = queryString.parse(this.props.location.search).username;
+
         this.socket = io('localhost:9000');
         this.socket.on('channel-list', channels => {
-            this.setState({channels});
+            this.setState({channels}); // In case channels get added/deleted.
         });
-        this.socket.on('channel-contents', contents => {
-            if (contents.error) {
-                return alert('Error retrieving channel contents.');
-            }
-            this.setState({ messages:contents.messages });
-            console.log(this.state.messages);
-        })
     }
 
     render() { 
