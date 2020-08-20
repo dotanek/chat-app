@@ -19,77 +19,119 @@ server.listen(port, () => {
     console.log(`Server started on port ${port}.`)
 });
 
-app.get('/get-messages', (req,res) => {
+app.get('/get-messages', (req,res) => { // Message fetch
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
 
     const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
     const id = reqUrl.searchParams.get('channelID');
-    const target = channelMessages.find(ch => ch.channelId === id);
+    const target = channelsMessages.find(ch => ch.channelId === id);
 
     if (typeof target === 'undefined') {
-        console.log('Request!');
         return res.json({ error: 'Requested channel does not exist.'});
     }
 
     res.json({ messages:target.messages });
 });
 
+app.get('/user-check', (req,res) => { // User name availability
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+    const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    const username = reqUrl.searchParams.get('username');
+    const target = users.find(u => u.username === username);
+
+    if (typeof target !== 'undefined') {
+        return res.json({ error: 'User is already online.'});
+    }
+
+    res.json({ status:'Username available.' });
+});
+
 io.on('connection', socket => {
+    console.log('User connected!');
+
+    let user = { }
+
     socket.emit('channel-list', channels);
-    socket.on('get-channel-messages', channel => {
-        const target = channelMessages.find(ch => ch.channelId === channel.id);
 
-        if (typeof target === 'undefined') {
+    socket.on('sign-in', username => { // Sign in
+        user.username = username;
+        users.push(user);
+    });
+
+    socket.on('disconnect', () => { // Sign out
+        if (users.some(u => u === user)) { // Not sure if should be done by reference or username.
+            users.splice(users.indexOf(user),1);
+        } else {
+            console.log('Disconnecting user does not exist.');
+        }
+
+        if (user.channel) {
+            socket.leave(user.channel.id);
+        }
+    });
+
+    socket.on('join-channel', channel => {
+        if (channels.some(ch => ch.id === channel.id)) {
+            if (user.channel) {
+                socket.leave(user.channel.id);
+            }
+
+            user.channel = channel;
+            socket.join(user.channel.id);
+        } else {
             console.log('Requested channel does not exist.');
-            return socket.emit('channel-messages', { error: 'Requested channel does not exist.' });
-        }  
+            return socket.emit('status', { error: 'Requested channel does not exist.' });
+        }
+    });
 
-        socket.emit('channel-messages', target.messages);
+    socket.on('message', message => {
+        if (user.channel) {
+            let newMessage = {
+                author: user.username,
+                content: message
+            }
+        
+            const channelMessages = channelsMessages.find(chm => chm.channelId === user.channel.id);
+
+            if (typeof channelMessages === 'undefined') {
+                return console.log('Channel messages not found.')
+            }
+
+            channelMessages.messages.push(newMessage);
+            io.to(user.channel.id).emit('message', newMessage);
+        }
     });
 });
 
 // Data
+
+let users = [
+    { username: 'test-user1' }
+]
 
 let channels = [
     { 
         id:'default1',
         name:'Default1',
         password: '',
-        users: [],
     },
     { 
         id:'default2',
         name:'Default2',
         password: '',
-        users: [],
-        messages: [],
     },
     { 
         id:'default3',
         name:'Default3',
         password: '',
-        users: [],
-        messages: [],
     },
 ]
 
-let channelMessages = [
+let channelsMessages = [
     {
         channelId: 'default1',
-        messages: [
-            { author: 'test-user1', content: 'Well hello thereaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa!' },
-            { author: 'test-user2', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user2', content: 'General Kenobi.' },
-            { author: 'test-user2', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-            { author: 'test-user1', content: 'General Kenobi.' },
-        ],
+        messages: [],
     },
     {
         channelId: 'default2',

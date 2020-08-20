@@ -2,9 +2,9 @@ import React, { Component } from 'react';
 import styled from 'styled-components';
 
 const Contents = styled.div`
-    width: 98%;
+    width: 99%;
     height: auto;
-    padding: 1%;
+    padding: 0.5%;
 `
 const Author = styled.div`
     width: 100%;
@@ -13,7 +13,6 @@ const Author = styled.div`
 `
 
 const Content = styled.div`
-    width: 100%;
     height: auto;
     word-wrap: break-word;
     font-size: 0.9vw;
@@ -21,12 +20,12 @@ const Content = styled.div`
 
 class Message extends Component {
     state = {  }
+
     render() { 
         return (  
             <Contents>
                 <Author>{this.props.author}</Author>
                 <Content>{this.props.content}</Content>
-                
             </Contents>
         );
     }

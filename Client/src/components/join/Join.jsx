@@ -45,7 +45,12 @@ const Input = styled.input`
     margin-top: 5%;
     border: 0;
     padding: 0;
-    text-align: center; 
+    font-size: 0.8vw;
+    text-align: center;
+
+    &:focus::placeholder {
+    color: transparent;
+    }
 `
 
 const Submit = styled.button`

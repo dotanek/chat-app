@@ -46,10 +46,11 @@ const IconHeader = styled.img`
 const Display = styled.div`
     display: flex;
     flex-direction: column;
+    align-items: center;
     background-color: #ffffff;
     width: calc(80% - 2vw);
-    height: calc(75% - 2vw);
-    padding: 1vw;
+    height: calc(75% - 1vw);
+    padding: 1vw 1vw 0vw 1vw;
     color: #000000;
 
     overflow-y: auto;
@@ -66,6 +67,10 @@ const Display = styled.div`
 
     &::-webkit-scrollbar-thumb {
         background-color: #308d1e;
+    }
+
+    & :nth-last-child(2) div:last-child {
+        margin-bottom: 1vw;
     }
 `
 
@@ -121,7 +126,7 @@ const ChannelAdd = styled.button`
     }
 `
 
-const InputBar = styled.div`
+const InputBar = styled.form`
     display: flex;
     background-color: #19640a;
     height: 6%;
@@ -154,17 +159,66 @@ const Send = styled.button`
 `
 
 class Chat extends Component {
-    state = { }
-
-    authentication() {
-       const username = queryString.parse(this.props.location.search).username;
-       if (!username || username.length === 0 || /[^A-Za-z0-9]+/g.test(username)) {
-           return true;
-       }
-       return false;
+    state = {
+        inputValue: ''
     }
 
-    onClickChannel(channel) {
+    constructor(props) {
+        super(props);
+        this.state.signedIn = false;
+        this.displayBottomRef = React.createRef();
+    }
+
+    connect = async () => {
+
+        let redirect = false;
+
+        const username = queryString.parse(this.props.location.search).username;
+        if (!username || username.length === 0 || /[^A-Za-z0-9]+/g.test(username)) {
+            redirect = true;
+        }
+
+        await axios.get(`http://localhost:9000/user-check?username=${username}`)
+            .then(res => {
+                if (res.data.error) {
+                    console.log(res.data.error);
+                    redirect = true;
+                }
+            })
+            .catch(err => {
+                return this.setState({redirect: true});
+            });
+
+        if (redirect) {
+            if (this.mounted) {
+                this.setState({redirect: true});
+            }
+            return;
+        } 
+
+        this.setState({signedIn: true}); 
+
+        // After signing in.
+
+        this.socket = io('localhost:9000');
+        this.socket.emit('sign-in', username);
+
+        this.socket.on('channel-list', channels => {
+            this.setState({channels}); // In case channels get added/deleted.
+        });
+
+        this.socket.on('message', message => {
+            let messages = [...this.state.messages];
+            messages.push(message);
+            this.setState({messages});
+        });
+    }
+
+    onClickChannel = channel => {
+        if (!this.state.signedIn) return;
+
+        this.socket.emit('join-channel', channel);
+
         const channels = [...this.state.channels];
         channels.forEach(ch => ch.active = false);
         const target = channels.find(ch => ch.id === channel.id);
@@ -183,8 +237,19 @@ class Chat extends Component {
             });
     }
 
-    renderChannels() {
-        if(this.state.channels) {
+    onChangeInput = e => {
+        const value = e.target.value;
+        this.setState({inputValue:value});
+    }
+
+    onSubmitInput = e => {
+        e.preventDefault();
+        this.socket.emit('message', this.state.inputValue);
+        this.setState({inputValue:''});
+    }
+
+    renderChannels = () => {
+        if (this.state.channels) {
             return this.state.channels.map(ch => <Channel
                 key={ch.id}
                 name={ch.name}
@@ -195,34 +260,42 @@ class Chat extends Component {
         }
     }
 
-    renderMessages() {
+    renderMessages = () => {
         if (!this.state.messages) {
             return <Placeholder>Enter a channel using menu at the side!</Placeholder>
         } else if (this.state.messages.length === 0) {
             return <Placeholder>There are no messages in this channel.</Placeholder>
         } else {
+            let key = 0;
             return this.state.messages.map(m => <Message
-                key={m.author+this.state.messages.length}
+                key={key++}
                 author={m.author}
                 content={m.content}
             />);
         }
     }
 
-    componentDidMount() {
-        if (this.authentication()) return; // Prevent connecting on redirect.
-        //const username = queryString.parse(this.props.location.search).username;
+    componentDidMount = () => {
+        this.mounted = true;
+        this.connect();
+        if (!this.state.signedIn) return; // Prevent connecting while not signed in.
 
-        this.socket = io('localhost:9000');
-        this.socket.on('channel-list', channels => {
-            this.setState({channels}); // In case channels get added/deleted.
-        });
+        const username = queryString.parse(this.props.location.search).username;
+    }
+
+    componentDidUpdate = () => {
+        if (!this.state.signedIn) return;
+        this.displayBottomRef.current.scrollIntoView();
+    }
+
+    componentWillUnmount = () => {
+        this.mounted = false;
     }
 
     render() { 
         return ( 
             <React.Fragment>
-                {this.authentication() && <Redirect to='/' />}
+                {this.state.redirect && <Redirect to='/' />}
                 <Container>
                     <Window>
                         <Header>
@@ -231,14 +304,15 @@ class Chat extends Component {
                             </Header>
                         <Display>
                             {this.renderMessages()}
+                            <div ref={this.displayBottomRef}></div>
                         </Display>
                         <Navigator>
                             {this.renderChannels()}
                             <ChannelAdd>+ new channel</ChannelAdd>
                         </Navigator>
-                        <InputBar>
-                            <Input />
-                            <Send>Send</Send>
+                        <InputBar onSubmit={this.onSubmitInput}>
+                            <Input type='text' value={this.state.inputValue} onChange={this.onChangeInput} s/>
+                            <Send type='submit'>Send</Send>
                         </InputBar>
                     </Window>
                 </Container>
