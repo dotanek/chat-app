@@ -23,5 +23,12 @@ code {
 body {
   background-color: var(--background-color);
   color: var(--text-color);
+}
+
+* {
+  font-family: 'Karla', sans-serif;
+}
+
+input {
   font-family: 'Karla', sans-serif;
 }

@@ -49,7 +49,7 @@ const Input = styled.input`
     text-align: center;
 
     &:focus::placeholder {
-    color: transparent;
+        color: transparent;
     }
 `
 

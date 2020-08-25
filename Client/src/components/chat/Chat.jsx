@@ -7,6 +7,7 @@ import axios from 'axios';
 
 import Channel from './Channel';
 import Message from './Message';
+import ChannelAdd from './ChannelAdd';
 
 import iconClouds from '../../icons/clouds-white.svg';
 
@@ -103,26 +104,6 @@ const Navigator = styled.div`
 
     &::-webkit-scrollbar-thumb {
         background-color: #ffffff;
-    }
-`
-
-const ChannelAdd = styled.button`
-    display: flex;
-    width: 100%;
-    height: 8%;
-    justify-content: center;
-    align-items: center;
-    border: 0;
-    background: none;
-    color: #ffffff;
-    font-size: 0.6vw;
-    border-bottom: 1px solid rgba(255,255,255,0.5);
-    transition: 0.2s ease-in-out;
-
-    &:hover {
-        cursor: pointer;
-        color: #0d2f07;
-        background-color: rgba(255,255,255,0.3);
     }
 `
 
@@ -248,6 +229,19 @@ class Chat extends Component {
         this.setState({inputValue:''});
     }
 
+    onClickConfirm = channelName => {
+        axios.get(`http://localhost:9000/create-channel?channelName=${channelName}`)
+        .then(res => {
+            console.log(res.data);
+            if (res.data.error) {
+                return this.setState({error: res.data.error});
+            }
+        })
+        .catch(err => {
+            console.log(err);
+        });
+    }
+
     renderChannels = () => {
         if (this.state.channels) {
             return this.state.channels.map(ch => <Channel
@@ -308,7 +302,7 @@ class Chat extends Component {
                         </Display>
                         <Navigator>
                             {this.renderChannels()}
-                            <ChannelAdd>+ new channel</ChannelAdd>
+                            <ChannelAdd onClickConfirm={this.onClickConfirm} />
                         </Navigator>
                         <InputBar onSubmit={this.onSubmitInput}>
                             <Input type='text' value={this.state.inputValue} onChange={this.onChangeInput} s/>

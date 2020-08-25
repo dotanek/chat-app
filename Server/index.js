@@ -47,6 +47,35 @@ app.get('/user-check', (req,res) => { // User name availability
     res.json({ status:'Username available.' });
 });
 
+
+app.get('/create-channel', (req,res) => { // User name availability
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+    const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    const channelName = reqUrl.searchParams.get('channelName');
+
+    const channel = { 
+        id: channelName,
+        name: channelName,
+        password: '',
+    }
+
+    const channelMessages = {
+        channelId: channelName,
+        messages: [],
+    }
+
+    if (channels.some(ch => ch.name === channel.name || ch.id === channel.name)) {
+        return res.json({ error: 'Channel already exists!'});
+    }
+
+    channels.push(channel);
+    channelsMessages.push(channelMessages);
+    io.sockets.emit('channel-list', channels);
+
+    res.json({ status:'Channel created successfully.' });
+});
+
 io.on('connection', socket => {
     console.log('User connected!');
 
