@@ -27,6 +27,7 @@ const Window = styled.div`
 `
 
 const Header = styled.div`
+    position: relative;
     display: flex;
     background-color: #19640a;
     color: white;
@@ -37,6 +38,47 @@ const Header = styled.div`
     font-size: 1.5vw;
     font-weight: bold;
 `
+
+const ChannelInfo = styled.div`
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    top: 0;
+    right: 0;
+    height: 100%;
+    padding-right: 3%;
+    font-weight: normal;
+`
+
+const Name = styled.div`
+    display: flex;
+    align-items: flex-end;
+    font-size: 0.9vw;
+    font-weight: bold;
+    justify-content: flex-end;
+    height: 20%;
+`
+
+const Users = styled.div`
+    display: flex;
+    font-size: 0.7vw;
+    align-items: center;
+    justify-content: flex-end;
+    height: 20%;
+`
+
+const Menu = styled.div`
+    display: flex;
+    font-size: 0.6vw;
+    color: #4e0d0d;
+    justify-content: flex-end;
+
+    &:hover {
+        cursor: pointer;
+    }
+`
+
 
 const IconHeader = styled.img`
     height: 30%;
@@ -155,6 +197,7 @@ class Chat extends Component {
         let redirect = false;
 
         const username = queryString.parse(this.props.location.search).username;
+        this.username = username;
         if (!username || username.length === 0 || /[^A-Za-z0-9]+/g.test(username)) {
             redirect = true;
         }
@@ -184,8 +227,32 @@ class Chat extends Component {
         this.socket = io('localhost:9000');
         this.socket.emit('sign-in', username);
 
-        this.socket.on('channel-list', channels => {
-            this.setState({channels}); // In case channels get added/deleted.
+        this.socket.on('channel-list', channels => { // Using event instead of fetch in case channels get added/deleted.
+
+            if (typeof this.state.channels !== 'undefined') {
+                const activeChannel = this.state.channels.find(ch => ch.active);
+
+                if (typeof activeChannel !== 'undefined') {
+                    const target = channels.find(ch => ch.id === activeChannel.id);
+                    if (typeof target !== 'undefined') {
+                        target.active = true; // If channel exists keep it active.
+                    } else {
+                        this.setState({messages:undefined}); // The channel was not found therefore no longer exists, and the messages should be purged.
+                        console.log('Active channel no longer exists.');
+                    }
+                }
+            }
+            this.setState({channels});
+        });
+
+        this.socket.on('channel-update', channel => { 
+            const channels = [...this.state.channels];
+            const target = channels.find(ch => ch.id === channel.id);
+
+            if (typeof target !== 'undefined') {
+                target.users = channel.users; // Only this value can change at the moment.
+                this.setState({channels});
+            }
         });
 
         this.socket.on('message', message => {
@@ -230,7 +297,20 @@ class Chat extends Component {
     }
 
     onClickConfirm = channelName => {
-        axios.get(`http://localhost:9000/create-channel?channelName=${channelName}`)
+        axios.get(`http://localhost:9000/create-channel?channelName=${channelName}&owner=${this.username}`)
+        .then(res => {
+            console.log(res.data);
+            if (res.data.error) {
+                return this.setState({error: res.data.error});
+            }
+        })
+        .catch(err => {
+            console.log(err);
+        });
+    }
+
+    onClickMenu = channelId => {
+        axios.get(`http://localhost:9000/remove-channel?channelId=${channelId}&owner=${this.username}`)
         .then(res => {
             console.log(res.data);
             if (res.data.error) {
@@ -265,16 +345,50 @@ class Chat extends Component {
                 key={key++}
                 author={m.author}
                 content={m.content}
+                date={m.date}
             />);
         }
+    }
+
+    renderChannelInfo = () => {
+
+        let name = '';
+        let id = '';
+        let users = '';
+        let remove = false;
+
+        if (this.state.channels) {
+
+            const target = this.state.channels.find(ch => ch.active);
+            if (typeof target !== 'undefined') {
+                name = target.name;
+                id = target.id;
+                
+                if (target.users === 1) {
+                    users = '1 online user';
+                } else if (target.users > 1) {
+                    users = target.users + ' online users';
+                }
+
+                if (target.owner === this.username) {
+                    remove = true;
+                }
+            }
+        }
+
+        return (
+            <React.Fragment>
+                <Name>{name}</Name>
+                <Users>{users}</Users>
+                {remove && <Menu onClick={() => this.onClickMenu(id)}>remove</Menu>}
+            </React.Fragment>
+        );
     }
 
     componentDidMount = () => {
         this.mounted = true;
         this.connect();
-        if (!this.state.signedIn) return; // Prevent connecting while not signed in.
-
-        const username = queryString.parse(this.props.location.search).username;
+        if (!this.state.signedIn) return;
     }
 
     componentDidUpdate = () => {
@@ -295,7 +409,10 @@ class Chat extends Component {
                         <Header>
                             <IconHeader src={iconClouds} />
                             chat-app
-                            </Header>
+                            <ChannelInfo>
+                                {this.renderChannelInfo()}
+                            </ChannelInfo>
+                        </Header>
                         <Display>
                             {this.renderMessages()}
                             <div ref={this.displayBottomRef}></div>

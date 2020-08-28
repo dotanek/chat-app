@@ -19,6 +19,11 @@ server.listen(port, () => {
     console.log(`Server started on port ${port}.`)
 });
 
+// Variables and objects
+
+
+// Routes
+
 app.get('/get-messages', (req,res) => { // Message fetch
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
 
@@ -53,11 +58,14 @@ app.get('/create-channel', (req,res) => { // User name availability
 
     const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
     const channelName = reqUrl.searchParams.get('channelName');
+    const owner = reqUrl.searchParams.get('owner');
 
     const channel = { 
         id: channelName,
         name: channelName,
+        owner: owner,
         password: '',
+        users: 0
     }
 
     const channelMessages = {
@@ -74,6 +82,44 @@ app.get('/create-channel', (req,res) => { // User name availability
     io.sockets.emit('channel-list', channels);
 
     res.json({ status:'Channel created successfully.' });
+});
+
+app.get('/remove-channel', (req,res) => { // User name availability
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+    const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    const channelId = reqUrl.searchParams.get('channelId');
+    const owner = reqUrl.searchParams.get('owner');
+
+    if (owner === '$erver') {
+        return; // Prevents users from removing default channels.
+    }
+
+    console.log(channelId,' - ', owner);
+
+    const target = channels.find(ch => ch.id === channelId);
+
+    if (typeof target === 'undefined') {
+        return res.json({ error: 'Channel does not exist.'});
+    }
+
+    if (target.owner !== owner) {
+        return res.json({ error: 'Not the owner of the channel.'});
+    }
+
+    const targetMessages = channelsMessages.find(ch => ch.id === channelId);
+
+    users.forEach(u => {
+        if (u.channel === target) {
+            u.channel = undefined;
+        }
+    });
+
+    channels.splice(channels.indexOf(target),1);
+    channelsMessages.splice(channelsMessages.indexOf(targetMessages),1);
+
+    io.sockets.emit('channel-list', channels);
+    res.json({ status:'Channel removed successfully.' });
 });
 
 io.on('connection', socket => {
@@ -97,17 +143,26 @@ io.on('connection', socket => {
 
         if (user.channel) {
             socket.leave(user.channel.id);
+            user.channel.users--;
+            io.to(user.channel.id).emit('channel-update', user.channel);
         }
     });
 
     socket.on('join-channel', channel => {
-        if (channels.some(ch => ch.id === channel.id)) {
+
+        const target = channels.find(ch => ch.id === channel.id);
+
+        if (typeof target !== 'undefined') {
             if (user.channel) {
                 socket.leave(user.channel.id);
+                user.channel.users--;
+                io.to(user.channel.id).emit('channel-update', user.channel);
             }
 
-            user.channel = channel;
+            user.channel = target;
+            user.channel.users++;
             socket.join(user.channel.id);
+            io.to(user.channel.id).emit('channel-update', user.channel);
         } else {
             console.log('Requested channel does not exist.');
             return socket.emit('status', { error: 'Requested channel does not exist.' });
@@ -118,7 +173,8 @@ io.on('connection', socket => {
         if (user.channel) {
             let newMessage = {
                 author: user.username,
-                content: message
+                content: message,
+                date: Date.now()
             }
         
             const channelMessages = channelsMessages.find(chm => chm.channelId === user.channel.id);
@@ -143,17 +199,23 @@ let channels = [
     { 
         id:'default1',
         name:'Default1',
+        owner: '$erwer',
         password: '',
+        users: 0
     },
     { 
         id:'default2',
         name:'Default2',
+        owner: '$erwer',
         password: '',
+        users: 0
     },
     { 
         id:'default3',
         name:'Default3',
+        owner: '$erwer',
         password: '',
+        users: 0
     },
 ]
 
