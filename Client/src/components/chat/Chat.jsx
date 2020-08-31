@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import styled from 'styled-components';
+import styled, { ThemeConsumer } from 'styled-components';
 import { Redirect } from 'react-router-dom';
 import io from 'socket.io-client';
 import queryString from 'query-string';
@@ -88,6 +88,7 @@ const IconHeader = styled.img`
 
 const Display = styled.div`
     display: flex;
+    position: relative;
     flex-direction: column;
     align-items: center;
     background-color: #ffffff;
@@ -114,6 +115,76 @@ const Display = styled.div`
 
     & :nth-last-child(2) div:last-child {
         margin-bottom: 1vw;
+    }
+`
+
+const Password = styled.div`
+    position: absolute;
+    display: flex;
+    top: 0;
+    width: 100%;
+    height: ${props => props.active ? '100%' : '0%' };
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(20,100,0,0.2);
+    overflow: hidden;
+    transition: 0.4s ease-in-out;
+`
+
+const PasswordDialog = styled.div`
+    display: flex;
+    flex-wrap: wrap;
+    width: 40%;
+    height: 20%;
+
+    div {
+        display: flex;
+        width: 50%;
+        height: 50%;
+        justify-content: center;
+        align-items: center;
+        font-size: 1vw;
+        font-weight: bold;
+        transition: 0.2s ease-in-out;
+    }
+`
+
+const InputPassword = styled.input`
+    width: calc(100% - 2vw);
+    height: calc(50% - 2vw);
+    border: 0;
+    padding: 1vw;
+    border: 0;
+    font-size: 1vw;
+    /*background-color: #e0ffd2;*/
+    background-color: white;
+    text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+
+    &:focus::placeholder {
+        color: transparent;
+    }
+`
+
+const CancelPassword = styled.div`
+    background-color: #c43c3c;
+    color: #ffffff;
+
+    &:hover {
+        cursor: pointer;
+        background-color: #e66d6d;
+        color: #360f0f;
+    }
+`
+
+const ConfirmPassword = styled.div`
+    background-color: #284cc3;
+    color: #ffffff;
+
+    &:hover {
+        cursor: pointer;
+        background-color: #7e9bf9;
+        color: #0b1c54;
     }
 `
 
@@ -183,7 +254,8 @@ const Send = styled.button`
 
 class Chat extends Component {
     state = {
-        inputValue: ''
+        inputValue: '',
+        passwordValue: ''
     }
 
     constructor(props) {
@@ -265,14 +337,27 @@ class Chat extends Component {
     onClickChannel = channel => {
         if (!this.state.signedIn) return;
 
-        this.socket.emit('join-channel', channel);
+        let password = '';
+
+        if (channel.password) {
+            this.setState({ activePassword:true, enteredChannel: channel });
+        } else {
+            this.setState({enteredChannel: channel }, () => {
+                this.enterChannel('');
+            });
+        }
+    }
+
+    enterChannel = password => {
+        const channel = this.state.enteredChannel;
+        this.socket.emit('join-channel', {channel,password});
 
         const channels = [...this.state.channels];
         channels.forEach(ch => ch.active = false);
         const target = channels.find(ch => ch.id === channel.id);
         target.active = true;
 
-        axios.get(`http://localhost:9000/get-messages?channelID=${target.id}`)
+        axios.get(`http://localhost:9000/get-messages?channelID=${target.id}&password=${password}`)
             .then(res => {
                 if (res.data.error) {
                     return this.setState({error: res.data.error});
@@ -285,6 +370,34 @@ class Chat extends Component {
             });
     }
 
+    onClickEnterPassword = () => {
+        this.setState({ activePassword:false });
+        const password = this.state.passwordValue;
+        axios.get(`http://localhost:9000/password-check?channelID=${this.state.enteredChannel.id}&user=${this.username}&password=${this.state.passwordValue}`)
+            .then(res => {
+                if (res.data.error) {
+                    return this.setState({error:res.data.error});
+                }
+
+                if (res.data.result) {
+                    return this.enterChannel(password);
+                }
+            })
+            .catch(err => {
+                return this.setState({error:err});
+            });
+
+            this.setState({ activePassword:false, passwordValue:'' })
+    }
+
+    onClickCancelPassword = () => {
+        this.setState({ activePassword:false, passwordValue:'' })
+    }
+
+    onChangeInputPassword = e => {
+        this.setState({ passwordValue: e.target.value })
+    }  
+
     onChangeInput = e => {
         const value = e.target.value;
         this.setState({inputValue:value});
@@ -296,8 +409,8 @@ class Chat extends Component {
         this.setState({inputValue:''});
     }
 
-    onClickConfirm = channelName => {
-        axios.get(`http://localhost:9000/create-channel?channelName=${channelName}&owner=${this.username}`)
+    onClickConfirm = (channelName,channelPassword) => {
+        axios.get(`http://localhost:9000/create-channel?name=${channelName}&password=${channelPassword}&owner=${this.username}`)
         .then(res => {
             console.log(res.data);
             if (res.data.error) {
@@ -351,14 +464,12 @@ class Chat extends Component {
     }
 
     renderChannelInfo = () => {
-
         let name = '';
         let id = '';
         let users = '';
         let remove = false;
 
         if (this.state.channels) {
-
             const target = this.state.channels.find(ch => ch.active);
             if (typeof target !== 'undefined') {
                 name = target.name;
@@ -414,6 +525,13 @@ class Chat extends Component {
                             </ChannelInfo>
                         </Header>
                         <Display>
+                            <Password active={this.state.activePassword}>
+                                <PasswordDialog>
+                                    <InputPassword placeholder='Password' value={this.state.passwordValue} onChange={this.onChangeInputPassword}/>
+                                    <CancelPassword onClick={this.onClickCancelPassword}>Cancel</CancelPassword>
+                                    <ConfirmPassword onClick={this.onClickEnterPassword}>Enter</ConfirmPassword>
+                                </PasswordDialog>
+                            </Password>
                             {this.renderMessages()}
                             <div ref={this.displayBottomRef}></div>
                         </Display>

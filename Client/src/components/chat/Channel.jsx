@@ -16,7 +16,7 @@ const Container = styled.div`
         cursor: pointer;
         color: #0d2f07;
         background-color: ${props => (props.active ? '#eebc32' : "#54B740")};
-    }
+    }  
 `
 
 class Channel extends Component {

@@ -37,7 +37,7 @@ const Dialog = styled.div`
     flex-wrap: wrap;
     width: 100%;
     z-index: 1;
-    height: ${props => props.active ? '5vw' : '0'};
+    height: ${props => props.active ? '6.5vw' : '0'};
     overflow: hidden;
     background-color: black;
     transition: 0.2s ease-in-out;
@@ -45,7 +45,7 @@ const Dialog = styled.div`
     div {
         display: flex;
         width: 50%;
-        height: 40%;
+        height: 34%;
         justify-content: center;
         align-items: center;
         font-size: 0.7vw;
@@ -57,12 +57,13 @@ const Dialog = styled.div`
 const Input = styled.input`
     display: flex;
     width: calc(100% - 2vw);
-    height: calc(60% - 2vw);
+    height: calc(33% - 2vw);
     padding: 1vw;
     border: 0;
     font-size: 0.8vw;
     background-color: #e0ffd2;
     text-align: center;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
 
     &:focus::placeholder {
         color: transparent;
@@ -91,24 +92,29 @@ const Cancel = styled.div`
 class ChannelAdd extends Component {
     state = {
         dialog: false,
-        channelName: ''
+        nameValue: '',
+        passwordValue: ''
     }
 
     onClickRegular = () => {
-        this.setState({ dialog:true, channelName:'' });
+        this.setState({ dialog:true, nameValue:'', passwordValue:'' });
     }
 
     onClickCancel = () => {
         this.setState({dialog:false});
     }
 
-    onChangeInput = e => {
-        this.setState({channelName:e.target.value});
+    onChangeInputName = e => {
+        this.setState({nameValue:e.target.value});
+    }
+
+    onChangeInputPassword = e => {
+        this.setState({passwordValue:e.target.value});
     }
 
     onClickConfirm = () => {
-        this.props.onClickConfirm(this.state.channelName);
-        this.setState({ dialog:false, channelName: ''});
+        this.props.onClickConfirm(this.state.nameValue,this.state.passwordValue);
+        this.setState({ dialog:false, nameValue: ''});
     }
 
     render() { 
@@ -118,7 +124,8 @@ class ChannelAdd extends Component {
                     + new channel
                 </Regular>
                 <Dialog active={this.state.dialog} >
-                    <Input placeholder='Channel name' value={this.state.channelName} onChange={this.onChangeInput}/>
+                    <Input placeholder='Channel name' value={this.state.nameValue} onChange={this.onChangeInputName}/>
+                    <Input placeholder='Password (optional)' value={this.state.passwordValue} onChange={this.onChangeInputPassword}/>
                     <Cancel onClick={this.onClickCancel}>Cancel</Cancel>
                     <Confirm onClick={this.onClickConfirm}>Confirm</Confirm>
                 </Dialog>

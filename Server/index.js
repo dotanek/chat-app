@@ -57,20 +57,26 @@ app.get('/create-channel', (req,res) => { // User name availability
     res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
 
     const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
-    const channelName = reqUrl.searchParams.get('channelName');
+    const name = reqUrl.searchParams.get('name');
+    const password = reqUrl.searchParams.get('password');
     const owner = reqUrl.searchParams.get('owner');
 
     const channel = { 
-        id: channelName,
-        name: channelName,
+        id: name,
+        name: name,
         owner: owner,
-        password: '',
+        password: (password.length !== 0),
         users: 0
     }
 
     const channelMessages = {
-        channelId: channelName,
+        channelId: name,
         messages: [],
+    }
+
+    const channelSecurity = {
+        channelId: name,
+        password: password
     }
 
     if (channels.some(ch => ch.name === channel.name || ch.id === channel.name)) {
@@ -79,6 +85,7 @@ app.get('/create-channel', (req,res) => { // User name availability
 
     channels.push(channel);
     channelsMessages.push(channelMessages);
+    channelsSecurity.push(channelSecurity);
     io.sockets.emit('channel-list', channels);
 
     res.json({ status:'Channel created successfully.' });
@@ -122,6 +129,41 @@ app.get('/remove-channel', (req,res) => { // User name availability
     res.json({ status:'Channel removed successfully.' });
 });
 
+app.get('/password-check', (req,res) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+
+    const reqUrl = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
+    const channelId = reqUrl.searchParams.get('channelID');
+    const user = reqUrl.searchParams.get('user');
+    const password = reqUrl.searchParams.get('password');
+
+    const target = channels.find(ch => ch.id === channelId);
+
+    if (typeof target === 'undefined') {
+        console.log('Channel does not exist.')
+        return res.json({ error:'Channel does not exist.' });
+    }
+
+    if (!target.password) {
+        console.log('Channel has no password.')
+        return res.json({ result: true }); 
+    }
+
+    const targetSecurity = channelsSecurity.find(ch => ch.channelId === target.id);
+
+    if (typeof targetSecurity === 'undefined') {
+        console.log('Requested channel has no security counterpart.');
+        return res.json({ error:'Requested channel has no security counterpart.' });
+    }
+
+    if (targetSecurity.password !== password) {
+        console.log('Incorrect password was given.')
+        return res.json({ result: false }); 
+    }
+
+    res.json({ result: true });
+});
+
 io.on('connection', socket => {
     console.log('User connected!');
 
@@ -148,11 +190,26 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('join-channel', channel => {
-
+    socket.on('join-channel', data => {
+        const channel = data.channel;
+        const password = data.password;
         const target = channels.find(ch => ch.id === channel.id);
 
         if (typeof target !== 'undefined') {
+            if (target.password) {
+                const targetSecurity = channelsSecurity.find(ch => ch.channelId === target.id);
+
+                if (typeof targetSecurity === 'undefined') {
+                    console.log('Requested channel has no security counterpart.');
+                    return socket.emit('status', { error: 'Requested channel has no security counterpart. This is a technical issue.' });
+                }
+
+                if (password !== targetSecurity.password) {
+                    console.log('Incorrect password was given.');
+                    return socket.emit('status', { error: 'Incorrect password was given.' });
+                }
+            }
+
             if (user.channel) {
                 socket.leave(user.channel.id);
                 user.channel.users--;
@@ -200,21 +257,21 @@ let channels = [
         id:'default1',
         name:'Default1',
         owner: '$erwer',
-        password: '',
+        password: false,
         users: 0
     },
     { 
         id:'default2',
         name:'Default2',
         owner: '$erwer',
-        password: '',
+        password: false,
         users: 0
     },
     { 
         id:'default3',
         name:'Default3',
         owner: '$erwer',
-        password: '',
+        password: false,
         users: 0
     },
 ]
@@ -231,5 +288,20 @@ let channelsMessages = [
     {
         channelId: 'default3',
         messages: [],
+    }
+]
+
+let channelsSecurity = [
+    {
+        channelId: 'default1',
+        password: ''
+    },
+    {
+        channelId: 'default2',
+        password: '',
+    },
+    {
+        channelId: 'default3',
+        password: '',
     }
 ]
